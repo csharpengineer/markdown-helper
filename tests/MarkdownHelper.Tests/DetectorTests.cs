@@ -47,7 +47,7 @@ namespace MarkdownHelper.Tests
         [Fact]
         public void VeryLongTextIsSkipped()
         {
-            Assert.False(MarkdownDetector.IsMarkdown("# a\n\n**b**\n" + new string('x', 1000001)));
+            Assert.False(MarkdownDetector.IsMarkdown("# a\n\n**b**\n" + new string('x', 200001)));
         }
     }
 

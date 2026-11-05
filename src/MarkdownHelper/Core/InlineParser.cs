@@ -345,14 +345,21 @@ namespace MarkdownHelper.Core
 
         private static void ProcessEmphasis(List<Token> tokens, int bottom)
         {
+            // Remembers where a search for an opener came up empty, so text with thousands of
+            // unmatched delimiters stays fast instead of rescanning from the start each time.
+            var floors = new Dictionary<int, int>();
+
             int closer = bottom;
             while (closer < tokens.Count)
             {
                 var close = tokens[closer];
                 if (close.Delimiter == '\0' || !close.CanClose || close.Count == 0) { closer++; continue; }
 
+                int floorKey = close.Delimiter * 8 + (close.CanOpen ? 4 : 0) + close.Count % 3;
+                int floor = floors.TryGetValue(floorKey, out int known) ? Math.Max(known, bottom) : bottom;
+
                 int opener = -1;
-                for (int k = closer - 1; k >= bottom; k--)
+                for (int k = closer - 1; k >= floor; k--)
                 {
                     var open = tokens[k];
                     if (open.Delimiter != close.Delimiter || !open.CanOpen || open.Count == 0) continue;
@@ -364,7 +371,15 @@ namespace MarkdownHelper.Core
                     break;
                 }
 
-                if (opener < 0) { closer++; continue; }
+                if (opener < 0)
+                {
+                    floors[floorKey] = closer;
+                    closer++;
+                    continue;
+                }
+
+                // Removing tokens below shifts later indexes, so no floor may sit above the opener.
+                foreach (int key in floors.Keys.ToList()) floors[key] = Math.Min(floors[key], opener);
 
                 var left = tokens[opener];
                 int used = close.Delimiter == '~' ? 2 : (left.Count >= 2 && close.Count >= 2 ? 2 : 1);
@@ -401,21 +416,26 @@ namespace MarkdownHelper.Core
         private static List<Inline> Collapse(List<Token> tokens)
         {
             var result = new List<Inline>();
+            var run = new StringBuilder();
+
+            void FlushRun()
+            {
+                if (run.Length == 0) return;
+                result.Add(new Text(run.ToString()));
+                run.Clear();
+            }
+
             foreach (var token in tokens)
             {
                 if (token.Node is Text text)
                 {
-                    if (text.Value.Length == 0) continue;
-                    if (result.Count > 0 && result[result.Count - 1] is Text previous)
-                    {
-                        previous.Value += text.Value;
-                        continue;
-                    }
-                    result.Add(new Text(text.Value));
+                    run.Append(text.Value);
                     continue;
                 }
+                FlushRun();
                 result.Add(token.Node);
             }
+            FlushRun();
             return result;
         }
     }

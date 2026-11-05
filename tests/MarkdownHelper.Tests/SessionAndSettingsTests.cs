@@ -28,6 +28,25 @@ namespace MarkdownHelper.Tests
         }
 
         [Fact]
+        public void LoadingIntoAnEmptyWindowHasNothingToUndo()
+        {
+            var session = new EditSession();
+            session.Load("first");
+            Assert.Equal("first", session.Markdown);
+            Assert.False(session.CanUndo);
+        }
+
+        [Fact]
+        public void LoadingOverExistingTextCanBeUndone()
+        {
+            var session = new EditSession();
+            session.Load("first");
+            session.Load("second");
+            session.Undo();
+            Assert.Equal("first", session.Markdown);
+        }
+
+        [Fact]
         public void UnchangedTextAddsNoHistory()
         {
             var session = Session("one");

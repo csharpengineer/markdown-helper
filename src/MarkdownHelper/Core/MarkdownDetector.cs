@@ -11,25 +11,38 @@ namespace MarkdownHelper.Core
     public static class MarkdownDetector
     {
         private const int MinimumLength = 15;
-        private const int MaximumLength = 1000000;
+        private const int MaximumLength = 200000;
         private const int SignsNeeded = 2;
         private const double CodeLineLimit = 0.3;
+        private static readonly TimeSpan MatchLimit = TimeSpan.FromMilliseconds(250);
 
-        private static readonly Regex Fence = new Regex(@"^ {0,3}(`{3,}|~{3,})", RegexOptions.Compiled);
-        private static readonly Regex HeadingLine = new Regex(@"^ {0,3}#{1,6} +\S", RegexOptions.Compiled);
-        private static readonly Regex Bold = new Regex(@"(?<![\w*])\*\*(?=\S)[^\n]*?(?<=\S)\*\*|(?<!\w)__(?=\S)[^\n]*?(?<=\S)__(?!\w)", RegexOptions.Compiled);
-        private static readonly Regex Bullet = new Regex(@"^ *[-*+] +\S", RegexOptions.Compiled);
-        private static readonly Regex Numbered = new Regex(@"^ *\d{1,3}[.)] +\S", RegexOptions.Compiled);
-        private static readonly Regex QuoteLine = new Regex(@"^ {0,3}> *\S", RegexOptions.Compiled);
-        private static readonly Regex LinkInline = new Regex(@"\[[^\]\n]+\]\((?:https?://|mailto:|/|\.|#)[^)\s]*\)", RegexOptions.Compiled);
-        private static readonly Regex InlineCode = new Regex(@"(?<!`)`[^`\n]+`(?!`)", RegexOptions.Compiled);
-        private static readonly Regex TableDelimiter = new Regex(@"^ *\|? *:?-+:? *(\| *:?-+:? *)+\|? *$|^ *\| *:?-+:? *\| *$", RegexOptions.Compiled);
+        private static readonly Regex Fence = new Regex(@"^ {0,3}(`{3,}|~{3,})", RegexOptions.Compiled, MatchLimit);
+        private static readonly Regex HeadingLine = new Regex(@"^ {0,3}#{1,6} +\S", RegexOptions.Compiled, MatchLimit);
+        private static readonly Regex Bold = new Regex(@"(?<![\w*])\*\*(?=\S)[^\n]*?(?<=\S)\*\*|(?<!\w)__(?=\S)[^\n]*?(?<=\S)__(?!\w)", RegexOptions.Compiled, MatchLimit);
+        private static readonly Regex Bullet = new Regex(@"^ *[-*+] +\S", RegexOptions.Compiled, MatchLimit);
+        private static readonly Regex Numbered = new Regex(@"^ *\d{1,3}[.)] +\S", RegexOptions.Compiled, MatchLimit);
+        private static readonly Regex QuoteLine = new Regex(@"^ {0,3}> *\S", RegexOptions.Compiled, MatchLimit);
+        private static readonly Regex LinkInline = new Regex(@"\[[^\]\n]+\]\((?:https?://|mailto:|/|\.|#)[^)\s]*\)", RegexOptions.Compiled, MatchLimit);
+        private static readonly Regex InlineCode = new Regex(@"(?<!`)`[^`\n]+`(?!`)", RegexOptions.Compiled, MatchLimit);
+        private static readonly Regex TableDelimiter = new Regex(@"^ *\|? *:?-+:? *(\| *:?-+:? *)+\|? *$|^ *\| *:?-+:? *\| *$", RegexOptions.Compiled, MatchLimit);
 
         private static readonly Regex CodeLine = new Regex(
             @"[;{}]\s*$|^\s*(def|class|import|from|function|func|public|private|protected|internal|static|var|let|const|return|using|namespace|if|else|elif|for|foreach|while|try|catch)\b.*[:({=]|^\s*</?\w[^>]*>\s*$|^\s*[\w.-]+:(\s+\S+)?\s*$|^\s*-\s+[\w.-]+:(\s+\S+)?\s*$",
-            RegexOptions.Compiled);
+            RegexOptions.Compiled, MatchLimit);
 
         public static bool IsMarkdown(string text)
+        {
+            try
+            {
+                return Inspect(text);
+            }
+            catch (RegexMatchTimeoutException)
+            {
+                return false;
+            }
+        }
+
+        private static bool Inspect(string text)
         {
             if (string.IsNullOrWhiteSpace(text) || text.Length < MinimumLength || text.Length > MaximumLength) return false;
 

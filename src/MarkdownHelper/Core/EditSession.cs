@@ -53,6 +53,19 @@ namespace MarkdownHelper.Core
             Changed?.Invoke(this, EventArgs.Empty);
         }
 
+        /// <summary>Brings in new text. An empty window has nothing worth undoing back to.</summary>
+        public void Load(string markdown)
+        {
+            if (Markdown.Length == 0)
+            {
+                Markdown = markdown ?? "";
+                history.Clear();
+                Changed?.Invoke(this, EventArgs.Empty);
+                return;
+            }
+            Commit(markdown);
+        }
+
         public void Undo()
         {
             if (!CanUndo) return;

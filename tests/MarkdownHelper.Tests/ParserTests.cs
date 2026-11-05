@@ -181,3 +181,63 @@ namespace MarkdownHelper.Tests
         }
     }
 }
+
+namespace MarkdownHelper.Tests
+{
+    public class RobustnessTests
+    {
+        private static readonly string Alphabet = "*_~`[]()!<>#-+=|\\ \n\t1.ab$:\"";
+
+        private static string Garbage(System.Random random, int length)
+        {
+            var text = new System.Text.StringBuilder(length);
+            for (int i = 0; i < length; i++) text.Append(Alphabet[random.Next(Alphabet.Length)]);
+            return text.ToString();
+        }
+
+        [Fact]
+        public void RandomTextNeverThrowsAndRendersEverywhere()
+        {
+            var random = new System.Random(20261105);
+            for (int i = 0; i < 3000; i++)
+            {
+                string text = Garbage(random, random.Next(1, 300));
+                var document = MarkdownParser.Parse(text);
+                HtmlRenderer.Render(document);
+                DiscordRenderer.Format(document);
+                MarkdownWriter.Write(document);
+                MarkdownDetector.IsMarkdown(text);
+            }
+        }
+
+        [Fact]
+        public void WrittenMarkdownIsStableForRandomText()
+        {
+            var random = new System.Random(7);
+            for (int i = 0; i < 1500; i++)
+            {
+                string text = Garbage(random, random.Next(1, 120));
+                string once = MarkdownWriter.Write(MarkdownParser.Parse(text));
+                string dumpOnce = NodeDump.Dump(once);
+                string twice = MarkdownWriter.Write(MarkdownParser.Parse(once));
+                Assert.True(dumpOnce == NodeDump.Dump(twice), "Unstable for: " + text);
+            }
+        }
+
+        [Theory]
+        [InlineData("a* ")]
+        [InlineData("*a ")]
+        [InlineData("_a ")]
+        [InlineData("[a ")]
+        [InlineData("`a ")]
+        [InlineData("** ")]
+        public void HugeRepetitiveTextStaysFast(string unit)
+        {
+            string text = string.Concat(Enumerable.Repeat(unit, 60000));
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            MarkdownParser.Parse(text);
+            MarkdownDetector.IsMarkdown(text);
+            Assert.True(watch.Elapsed.TotalSeconds < 5, "Took " + watch.Elapsed);
+        }
+    }
+}
