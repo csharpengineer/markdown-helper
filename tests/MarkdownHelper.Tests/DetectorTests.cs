@@ -1,3 +1,4 @@
+using System.Linq;
 using MarkdownHelper.Core;
 using Xunit;
 
@@ -106,5 +107,72 @@ namespace MarkdownHelper.Tests
 
         [Fact]
         public void EmptyIgnoreListIgnoresNothing() => Assert.True(new CopyFilter().ShouldOffer(Copy("Code"), new string[0]));
+    }
+}
+
+namespace MarkdownHelper.Tests
+{
+    public class AppPickerTests
+    {
+        private static RunningApp App(string process, string description = "") => new RunningApp(process, description, null);
+
+        [Fact]
+        public void EntriesKeepAFriendlyNameAndMatchByProcess()
+        {
+            string entry = IgnoreList.Entry("Google Chrome", "chrome");
+            Assert.Equal("Google Chrome", IgnoreList.Label(entry));
+            Assert.True(IgnoreList.Matches(new[] { entry }, "chrome.exe"));
+            Assert.False(IgnoreList.Matches(new[] { entry }, "Google Chrome"));
+        }
+
+        [Fact]
+        public void PlainEntriesStillWork()
+        {
+            Assert.Equal("notepad", IgnoreList.Label("notepad"));
+            Assert.Equal(IgnoreList.VsCode, IgnoreList.Label(IgnoreList.VsCode));
+            Assert.True(IgnoreList.Matches(new[] { "notepad" }, "Notepad"));
+        }
+
+        [Fact]
+        public void ChoicesUseFriendlyNamesSortedAlphabetically()
+        {
+            var choices = AppPicker.Choices(new[] { App("winword", "Microsoft Word"), App("chrome", "Google Chrome") }, new string[0], "MarkdownHelper");
+            Assert.Equal(new[] { "Google Chrome", "Microsoft Word" }, choices.Select(c => c.Label));
+        }
+
+        [Fact]
+        public void AppsWithNoDescriptionShowTheirProcessName()
+        {
+            var choices = AppPicker.Choices(new[] { App("mytool", "  ") }, new string[0], "MarkdownHelper");
+            Assert.Equal("mytool", choices.Single().Label);
+        }
+
+        [Fact]
+        public void AnAppWithManyWindowsAppearsOnce()
+        {
+            var choices = AppPicker.Choices(new[] { App("chrome", "Chrome"), App("CHROME", "Chrome") }, new string[0], "MarkdownHelper");
+            Assert.Single(choices);
+        }
+
+        [Fact]
+        public void AlreadyIgnoredAppsAreLeftOut()
+        {
+            string[] ignored = { IgnoreList.VsCode, IgnoreList.Entry("Google Chrome", "chrome") };
+            var choices = AppPicker.Choices(new[] { App("Code", "Visual Studio Code"), App("chrome"), App("notepad") }, ignored, "MarkdownHelper");
+            Assert.Equal("notepad", choices.Single().ProcessName);
+        }
+
+        [Fact]
+        public void ThisToolAndWindowsPlumbingAreLeftOut()
+        {
+            var running = new[] { App("MarkdownHelper"), App("ApplicationFrameHost"), App("TextInputHost"), App("notepad") };
+            Assert.Equal("notepad", AppPicker.Choices(running, new string[0], "MarkdownHelper").Single().ProcessName);
+        }
+
+        [Fact]
+        public void NothingRunningGivesAnEmptyList()
+        {
+            Assert.Empty(AppPicker.Choices(new RunningApp[0], new string[0], "MarkdownHelper"));
+        }
     }
 }

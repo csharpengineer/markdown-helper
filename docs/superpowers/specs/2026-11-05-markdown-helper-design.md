@@ -75,6 +75,7 @@ The tray menu has Open preview, Settings and Quit.
   must not trigger it.
 - The same text does not trigger twice in a row.
 - Copies from apps on the ignore list are skipped (defaults: VS Code, terminals).
+  Apps are added by picking from a list of what is open, not by typing a name.
 - Clipboard content marked private by password managers is skipped.
 - Copies the tool makes itself are skipped.
 

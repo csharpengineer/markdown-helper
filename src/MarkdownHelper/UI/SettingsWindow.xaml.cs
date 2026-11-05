@@ -147,7 +147,7 @@ namespace MarkdownHelper.UI
 
             var add = new Button { Content = "+ Add", Style = (Style)FindResource("Btn"), Height = 26, Padding = new Thickness(10, 0, 10, 0), Margin = new Thickness(0, 0, 5, 5) };
             add.SetResourceReference(ForegroundProperty, "AccentBrush");
-            add.Click += (s, e) => { AddRow.Visibility = Visibility.Visible; AddAppBox.Focus(); };
+            add.Click += (s, e) => ShowAppList();
             IgnoreChips.Children.Add(add);
         }
 
@@ -161,7 +161,7 @@ namespace MarkdownHelper.UI
                 Margin = new Thickness(4, 0, -4, 0),
                 Content = new TextBlock { Text = "✕", FontSize = 9 }
             };
-            System.Windows.Automation.AutomationProperties.SetName(remove, "Stop ignoring " + app);
+            System.Windows.Automation.AutomationProperties.SetName(remove, "Stop ignoring " + IgnoreList.Label(app));
             remove.Click += (s, e) =>
             {
                 settings.IgnoredApps.Remove(app);
@@ -170,7 +170,7 @@ namespace MarkdownHelper.UI
             };
 
             var panel = new StackPanel { Orientation = Orientation.Horizontal };
-            panel.Children.Add(new TextBlock { Text = app, FontSize = 12, VerticalAlignment = VerticalAlignment.Center });
+            panel.Children.Add(new TextBlock { Text = IgnoreList.Label(app), FontSize = 12, VerticalAlignment = VerticalAlignment.Center });
             panel.Children.Add(remove);
 
             var chip = new Border
@@ -186,25 +186,57 @@ namespace MarkdownHelper.UI
             return chip;
         }
 
-        private void OnAddApp(object sender, RoutedEventArgs e) => AddApp();
-
-        private void OnAddAppKey(object sender, KeyEventArgs e)
+        /// <summary>Lists what is open now, so nobody has to know an app's process name.</summary>
+        private void ShowAppList()
         {
-            if (e.Key == Key.Enter) AddApp();
+            string self = System.Diagnostics.Process.GetCurrentProcess().ProcessName;
+            var choices = AppPicker.Choices(RunningApps.Read(), settings.IgnoredApps, self);
+
+            AppList.Children.Clear();
+            foreach (var app in choices) AppList.Children.Add(MakeAppRow(app));
+            if (choices.Count == 0)
+            {
+                AppList.Children.Add(new TextBlock { Text = "No other apps are open", Style = (Style)FindResource("Sub"), Margin = new Thickness(8, 5, 8, 5) });
+            }
+
+            AppPanel.Visibility = Visibility.Visible;
         }
 
-        private void AddApp()
+        private UIElement MakeAppRow(RunningApp app)
         {
-            string name = AddAppBox.Text.Trim();
-            if (name.Length > 0 && !settings.IgnoredApps.Contains(name, StringComparer.OrdinalIgnoreCase))
+            var panel = new StackPanel { Orientation = Orientation.Horizontal };
+            panel.Children.Add(new System.Windows.Controls.Image { Source = LoadIcon(app.Path), Width = 18, Height = 18, Margin = new Thickness(0, 0, 9, 0) });
+            panel.Children.Add(new TextBlock { Text = app.Label, FontSize = 13, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis });
+
+            var row = new Button { Style = (Style)FindResource("AppRow"), Content = panel };
+            System.Windows.Automation.AutomationProperties.SetName(row, "Ignore copies from " + app.Label);
+            row.Click += (s, e) =>
             {
-                settings.IgnoredApps.Add(name);
+                settings.IgnoredApps.Add(IgnoreList.Entry(app.Label, app.ProcessName));
+                AppPanel.Visibility = Visibility.Collapsed;
                 ShowChips();
                 Save();
-            }
-            AddAppBox.Clear();
-            AddRow.Visibility = Visibility.Collapsed;
+            };
+            return row;
         }
+
+        private static ImageSource LoadIcon(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return null;
+            try
+            {
+                using (var icon = System.Drawing.Icon.ExtractAssociatedIcon(path))
+                {
+                    return System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(icon.Handle, Int32Rect.Empty, System.Windows.Media.Imaging.BitmapSizeOptions.FromEmptyOptions());
+                }
+            }
+            catch (Exception e) when (e is ArgumentException || e is System.IO.IOException || e is UnauthorizedAccessException || e is System.Runtime.InteropServices.COMException)
+            {
+                return null;
+            }
+        }
+
+        private void OnCancelPick(object sender, RoutedEventArgs e) => AppPanel.Visibility = Visibility.Collapsed;
 
         private void OnStartupChanged(object sender, RoutedEventArgs e)
         {

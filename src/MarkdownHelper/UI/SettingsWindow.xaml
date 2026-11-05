@@ -25,6 +25,28 @@
       <Setter Property="FontSize" Value="12" />
       <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
     </Style>
+    <Style x:Key="AppRow" TargetType="Button">
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Box" Background="Transparent" CornerRadius="4" Padding="8,5">
+              <ContentPresenter />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Box" Property="Background" Value="{DynamicResource HoverBrush}" />
+              </Trigger>
+              <Trigger Property="IsKeyboardFocused" Value="True">
+                <Setter TargetName="Box" Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
   </Window.Resources>
 
   <StackPanel>
@@ -115,12 +137,18 @@
         <StackPanel Margin="14,10">
           <TextBlock Text="Ignore copies from" />
           <WrapPanel x:Name="IgnoreChips" Margin="0,7,0,0" />
-          <DockPanel x:Name="AddRow" Margin="0,6,0,0" Visibility="Collapsed">
-            <Button DockPanel.Dock="Right" Style="{StaticResource Btn}" Height="28" Content="Add" Margin="6,0,0,0" Click="OnAddApp" />
-            <TextBox x:Name="AddAppBox" Height="28" Padding="6,4" Background="{DynamicResource LayerBrush}" Foreground="{DynamicResource TextBrush}"
-                     CaretBrush="{DynamicResource TextBrush}" BorderBrush="{DynamicResource StrokeStrongBrush}" KeyDown="OnAddAppKey"
-                     AutomationProperties.Name="App name" ToolTip="The app's process name, such as notepad" />
-          </DockPanel>
+          <StackPanel x:Name="AppPanel" Margin="0,4,0,0" Visibility="Collapsed">
+            <DockPanel Margin="0,0,0,5">
+              <Button DockPanel.Dock="Right" Style="{StaticResource Btn}" Height="26" Padding="10,0" Content="Cancel" Click="OnCancelPick" />
+              <TextBlock Text="Choose an app that's open right now" VerticalAlignment="Center" Style="{StaticResource Sub}" />
+            </DockPanel>
+            <Border BorderThickness="1" BorderBrush="{DynamicResource StrokeBrush}" CornerRadius="6">
+              <ScrollViewer MaxHeight="196" VerticalScrollBarVisibility="Auto" Focusable="False">
+                <StackPanel x:Name="AppList" Margin="3" />
+              </ScrollViewer>
+            </Border>
+            <TextBlock Text="Not listed? Open the app, then click + Add again." Margin="0,6,0,0" Style="{StaticResource Sub}" />
+          </StackPanel>
         </StackPanel>
       </Border>
 
