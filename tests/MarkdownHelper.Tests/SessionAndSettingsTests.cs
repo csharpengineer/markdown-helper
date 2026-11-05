@@ -149,7 +149,7 @@ namespace MarkdownHelper.Tests
             Assert.Equal(NotifyMode.Popup, settings.NotifyMode);
             Assert.Equal(6, settings.PopupSeconds);
             Assert.Equal("Ctrl+Alt+M", settings.Hotkey);
-            Assert.Equal(new[] { "VS Code", "Terminal" }, settings.IgnoredApps);
+            Assert.Empty(settings.IgnoredApps);
             Assert.True(settings.StartWithWindows);
         }
 
@@ -169,7 +169,7 @@ namespace MarkdownHelper.Tests
                 NotifyMode = NotifyMode.TrayOnly,
                 PopupSeconds = 9,
                 Hotkey = "Ctrl+Shift+K",
-                IgnoredApps = { "notes" },
+                IgnoredApps = { new IgnoredApp("Notes App", "notes", "aWNvbg==") },
                 StartWithWindows = false,
                 ShowMarkdown = true,
                 LastMode = EditorMode.RemovePieces
@@ -179,7 +179,10 @@ namespace MarkdownHelper.Tests
             Assert.Equal(NotifyMode.TrayOnly, loaded.NotifyMode);
             Assert.Equal(9, loaded.PopupSeconds);
             Assert.Equal("Ctrl+Shift+K", loaded.Hotkey);
-            Assert.Contains("notes", loaded.IgnoredApps);
+            var app = Assert.Single(loaded.IgnoredApps);
+            Assert.Equal("Notes App", app.Label);
+            Assert.Equal("notes", app.ProcessName);
+            Assert.Equal("aWNvbg==", app.IconPng);
             Assert.False(loaded.StartWithWindows);
             Assert.True(loaded.ShowMarkdown);
             Assert.Equal(EditorMode.RemovePieces, loaded.LastMode);
@@ -215,7 +218,25 @@ namespace MarkdownHelper.Tests
             Assert.Equal(10, settings.PopupSeconds);
             Assert.Equal("Ctrl+Alt+M", settings.Hotkey);
             Assert.True(settings.StartWithWindows);
-            Assert.Equal(2, settings.IgnoredApps.Count);
+            Assert.Empty(settings.IgnoredApps);
+        }
+
+        [Fact]
+        public void DuplicateAndBlankIgnoreEntriesAreRemoved()
+        {
+            var settings = new AppSettings { IgnoredApps = { new IgnoredApp("A", "app"), new IgnoredApp("A again", "APP"), new IgnoredApp("Blank", " ") } };
+            settings.Normalize();
+            Assert.Equal("A", Assert.Single(settings.IgnoredApps).Label);
+        }
+
+        [Fact]
+        public void OlderIgnoreEntriesAreDroppedAndOtherSettingsKept()
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(SettingsFile));
+            File.WriteAllText(SettingsFile, "{\"IgnoredApps\":[\"VS Code\",\"Terminal\"],\"PopupSeconds\":9}");
+            var settings = new SettingsStore(SettingsFile).Load();
+            Assert.Empty(settings.IgnoredApps);
+            Assert.Equal(9, settings.PopupSeconds);
         }
 
         [Fact]

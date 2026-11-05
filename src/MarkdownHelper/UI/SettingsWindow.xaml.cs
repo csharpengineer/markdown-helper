@@ -151,7 +151,7 @@ namespace MarkdownHelper.UI
             IgnoreChips.Children.Add(add);
         }
 
-        private UIElement MakeChip(string app)
+        private UIElement MakeChip(IgnoredApp app)
         {
             var remove = new Button
             {
@@ -161,7 +161,7 @@ namespace MarkdownHelper.UI
                 Margin = new Thickness(4, 0, -4, 0),
                 Content = new TextBlock { Text = "✕", FontSize = 9 }
             };
-            System.Windows.Automation.AutomationProperties.SetName(remove, "Stop ignoring " + IgnoreList.Label(app));
+            System.Windows.Automation.AutomationProperties.SetName(remove, "Stop ignoring " + app.Label);
             remove.Click += (s, e) =>
             {
                 settings.IgnoredApps.Remove(app);
@@ -170,7 +170,9 @@ namespace MarkdownHelper.UI
             };
 
             var panel = new StackPanel { Orientation = Orientation.Horizontal };
-            panel.Children.Add(new TextBlock { Text = IgnoreList.Label(app), FontSize = 12, VerticalAlignment = VerticalAlignment.Center });
+            var chipIcon = AppIcon.FromBase64(app.IconPng);
+            if (chipIcon != null) panel.Children.Add(new System.Windows.Controls.Image { Source = chipIcon, Width = 14, Height = 14, Margin = new Thickness(-3, 0, 6, 0) });
+            panel.Children.Add(new TextBlock { Text = app.Label, FontSize = 12, VerticalAlignment = VerticalAlignment.Center });
             panel.Children.Add(remove);
 
             var chip = new Border
@@ -205,14 +207,15 @@ namespace MarkdownHelper.UI
         private UIElement MakeAppRow(RunningApp app)
         {
             var panel = new StackPanel { Orientation = Orientation.Horizontal };
-            panel.Children.Add(new System.Windows.Controls.Image { Source = LoadIcon(app.Path), Width = 18, Height = 18, Margin = new Thickness(0, 0, 9, 0) });
+            var icon = AppIcon.FromFile(app.Path);
+            panel.Children.Add(new System.Windows.Controls.Image { Source = icon, Width = 18, Height = 18, Margin = new Thickness(0, 0, 9, 0) });
             panel.Children.Add(new TextBlock { Text = app.Label, FontSize = 13, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis });
 
             var row = new Button { Style = (Style)FindResource("AppRow"), Content = panel };
             System.Windows.Automation.AutomationProperties.SetName(row, "Ignore copies from " + app.Label);
             row.Click += (s, e) =>
             {
-                settings.IgnoredApps.Add(IgnoreList.Entry(app.Label, app.ProcessName));
+                settings.IgnoredApps.Add(new IgnoredApp(app.Label, app.ProcessName, AppIcon.ToBase64(icon)));
                 AppPanel.Visibility = Visibility.Collapsed;
                 ShowChips();
                 Save();
@@ -220,21 +223,6 @@ namespace MarkdownHelper.UI
             return row;
         }
 
-        private static ImageSource LoadIcon(string path)
-        {
-            if (string.IsNullOrEmpty(path)) return null;
-            try
-            {
-                using (var icon = System.Drawing.Icon.ExtractAssociatedIcon(path))
-                {
-                    return System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(icon.Handle, Int32Rect.Empty, System.Windows.Media.Imaging.BitmapSizeOptions.FromEmptyOptions());
-                }
-            }
-            catch (Exception e) when (e is ArgumentException || e is System.IO.IOException || e is UnauthorizedAccessException || e is System.Runtime.InteropServices.COMException)
-            {
-                return null;
-            }
-        }
 
         private void OnCancelPick(object sender, RoutedEventArgs e) => AppPanel.Visibility = Visibility.Collapsed;
 

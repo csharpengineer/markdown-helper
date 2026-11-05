@@ -42,7 +42,7 @@ namespace MarkdownHelper.Windows
 
         public IntPtr Handle => source.Handle;
 
-        public IEnumerable<string> IgnoredApps { get; set; } = new string[0];
+        public IEnumerable<IgnoredApp> IgnoredApps { get; set; } = new IgnoredApp[0];
 
         public event EventHandler<string> MarkdownCopied;
         public event EventHandler HotkeyPressed;

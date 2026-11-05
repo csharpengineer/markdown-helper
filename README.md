@@ -63,11 +63,8 @@ Right-click the tray icon and choose **Settings**.
 | When markdown is copied | Small popup, tray icon dot only, open the preview, or shortcut only |
 | Shortcut | Any key combination with Ctrl, Alt, Shift or Win |
 | Popup stays for | 2 to 30 seconds |
-| Ignore copies from | Click **+ Add** and pick from the apps that are open. VS Code and terminals are on the list by default |
+| Ignore copies from | Click **+ Add** and pick from the apps that are open. Nothing is ignored until you add it |
 | Start with Windows | On by default |
-
-If you use Copilot Chat inside VS Code, remove VS Code from the ignore list to
-get the popup there. The shortcut works either way.
 
 ## Privacy
 

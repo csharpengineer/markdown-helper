@@ -29,12 +29,10 @@ namespace MarkdownHelper.Core
         [DataMember] public NotifyMode NotifyMode { get; set; } = NotifyMode.Popup;
         [DataMember] public int PopupSeconds { get; set; } = 6;
         [DataMember] public string Hotkey { get; set; } = DefaultHotkey;
-        [DataMember] public List<string> IgnoredApps { get; set; } = DefaultIgnoredApps();
+        [DataMember(Name = "IgnoredAppList")] public List<IgnoredApp> IgnoredApps { get; set; } = new List<IgnoredApp>();
         [DataMember] public bool StartWithWindows { get; set; } = true;
         [DataMember] public bool ShowMarkdown { get; set; }
         [DataMember] public EditorMode LastMode { get; set; } = EditorMode.Edit;
-
-        public static List<string> DefaultIgnoredApps() => new List<string> { IgnoreList.VsCode, IgnoreList.Terminal };
 
         /// <summary>Repairs values a hand-edited or older settings file may have left out of range.</summary>
         public void Normalize()
@@ -43,8 +41,12 @@ namespace MarkdownHelper.Core
             if (!Enum.IsDefined(typeof(EditorMode), LastMode)) LastMode = EditorMode.Edit;
             PopupSeconds = Math.Max(MinPopupSeconds, Math.Min(MaxPopupSeconds, PopupSeconds));
             if (!HotkeyGesture.TryParse(Hotkey, out _)) Hotkey = DefaultHotkey;
-            if (IgnoredApps == null) IgnoredApps = DefaultIgnoredApps();
-            IgnoredApps = IgnoredApps.Where(a => !string.IsNullOrWhiteSpace(a)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            if (IgnoredApps == null) IgnoredApps = new List<IgnoredApp>();
+            IgnoredApps = IgnoredApps
+                .Where(a => a != null && !string.IsNullOrWhiteSpace(a.ProcessName))
+                .GroupBy(a => a.ProcessName, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.First())
+                .ToList();
         }
 
         [OnDeserializing]
@@ -53,7 +55,7 @@ namespace MarkdownHelper.Core
             NotifyMode = NotifyMode.Popup;
             PopupSeconds = 6;
             Hotkey = DefaultHotkey;
-            IgnoredApps = DefaultIgnoredApps();
+            IgnoredApps = new List<IgnoredApp>();
             StartWithWindows = true;
             LastMode = EditorMode.Edit;
         }

@@ -19,7 +19,7 @@ namespace MarkdownHelper.Core
     {
         private int? lastHash;
 
-        public bool ShouldOffer(CopyInfo copy, IEnumerable<string> ignoredApps)
+        public bool ShouldOffer(CopyInfo copy, IEnumerable<IgnoredApp> ignoredApps)
         {
             if (copy.IsOwnWrite || copy.IsPrivate) return false;
             if (string.IsNullOrEmpty(copy.Text)) return false;

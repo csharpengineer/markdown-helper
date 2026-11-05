@@ -27,7 +27,7 @@ namespace MarkdownHelper.Core
         // Windows helpers that own windows but are not apps anyone would recognise.
         private static readonly string[] Hidden = { "ApplicationFrameHost", "TextInputHost", "SystemSettings", "ShellExperienceHost", "StartMenuExperienceHost", "SearchHost" };
 
-        public static List<RunningApp> Choices(IEnumerable<RunningApp> running, IEnumerable<string> ignored, string ownProcessName)
+        public static List<RunningApp> Choices(IEnumerable<RunningApp> running, IEnumerable<IgnoredApp> ignored, string ownProcessName)
         {
             var entries = ignored.ToList();
             return running

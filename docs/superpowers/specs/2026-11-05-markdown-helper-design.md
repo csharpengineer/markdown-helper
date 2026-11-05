@@ -74,8 +74,9 @@ The tray menu has Open preview, Settings and Quit.
 - One stray asterisk does not count. Source code such as `**kwargs` or `# comment`
   must not trigger it.
 - The same text does not trigger twice in a row.
-- Copies from apps on the ignore list are skipped (defaults: VS Code, terminals).
-  Apps are added by picking from a list of what is open, not by typing a name.
+- Copies from apps on the ignore list are skipped. The list starts empty.
+  Apps are added by picking from a list of what is open, not by typing a name,
+  and each keeps its name and icon even when the app is closed.
 - Clipboard content marked private by password managers is skipped.
 - Copies the tool makes itself are skipped.
 
