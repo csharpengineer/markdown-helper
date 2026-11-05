@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <RootNamespace>MarkdownHelper</RootNamespace>
+    <AssemblyName>MarkdownHelper</AssemblyName>
+    <Version>1.0.0</Version>
+    <Product>Markdown Helper</Product>
+    <Description>Turns clipboard markdown into text that pastes correctly in Teams and Discord.</Description>
+    <Copyright>Copyright (c) 2026 Brandon Ryan</Copyright>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\..\assets\app.ico</ApplicationIcon>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="MarkdownHelper.Tests" />
+  </ItemGroup>
+
+</Project>
