@@ -84,8 +84,8 @@ namespace MarkdownHelper
                 return;
             }
 
-            // Someone who double-clicks the exe should see something; a Windows start should not.
-            if (!e.Args.Contains(StartupRegistration.BackgroundArgument)) controller.OpenPreviewFromClipboard();
+            // The tool lives in the tray. Someone who starts it by hand is told where it went.
+            if (!e.Args.Contains(StartupRegistration.BackgroundArgument)) controller.AnnounceRunning();
         }
 
         private static string ReadFile(string path)

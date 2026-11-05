@@ -28,7 +28,8 @@ understands:
 ## Install
 
 1. Download `MarkdownHelper.exe` from the [latest release](https://github.com/csharpengineer/markdown-helper/releases/latest).
-2. Run it. There is nothing to install.
+2. Run it. There is nothing to install. It starts in the tray, so look for its icon
+   near the clock. Run it again, or press **Ctrl+Alt+M**, to open the window.
 
 It needs Windows 10 (version 1903 or later) or Windows 11, which already include
 everything it uses. The file is not code signed yet, so Windows SmartScreen may

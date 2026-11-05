@@ -147,6 +147,11 @@ namespace MarkdownHelper
 
         public void OpenPreviewFromClipboard() => OpenPreview(TakeMarkdown());
 
+        public void AnnounceRunning()
+        {
+            tray.ShowNotice("Markdown Helper is running", "Copy some markdown, or press " + settings.Hotkey + " to open it.");
+        }
+
         /// <summary>Shows the popup as if the text had just been copied.</summary>
         public void DemonstratePopup(string markdown) => ShowPopup(markdown);
 

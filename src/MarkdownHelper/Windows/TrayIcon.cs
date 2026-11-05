@@ -12,6 +12,7 @@ namespace MarkdownHelper.Windows
     internal sealed class TrayIcon : IDisposable
     {
         private const string Tooltip = "Markdown Helper";
+        private const int NoticeMilliseconds = 5000;
 
         private readonly WinForms.NotifyIcon icon;
         private readonly ContextMenu menu;
@@ -61,6 +62,8 @@ namespace MarkdownHelper.Windows
         }
 
         public void SetHotkeyText(string gesture) => openItem.InputGestureText = gesture;
+
+        public void ShowNotice(string title, string text) => icon.ShowBalloonTip(NoticeMilliseconds, title, text, WinForms.ToolTipIcon.None);
 
         public void Refresh()
         {

@@ -51,7 +51,9 @@ pastes correctly in both Teams and Discord.
 
 ### Getting attention
 
-The tool lives in the tray and starts with Windows. A setting picks what happens
+The tool lives in the tray, starts with Windows, and always starts without opening
+a window. Started by hand, it shows a brief notice saying so, and starting it again
+opens the preview. A setting picks what happens
 when markdown is copied:
 
 1. **Show a small popup** (default). Appears bottom-right above the tray with
