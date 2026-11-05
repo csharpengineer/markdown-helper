@@ -1,0 +1,10 @@
+.superpowers/
+.remember/
+
+# Build output
+bin/
+obj/
+artifacts/
+TestResults/
+*.user
+.vs/
