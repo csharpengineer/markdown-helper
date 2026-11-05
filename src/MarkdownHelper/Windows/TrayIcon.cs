@@ -16,6 +16,7 @@ namespace MarkdownHelper.Windows
         private readonly WinForms.NotifyIcon icon;
         private readonly ContextMenu menu;
         private readonly MenuItem openItem;
+        private Icon currentIcon;
         private IntPtr iconHandle;
         private bool marked;
 
@@ -70,7 +71,10 @@ namespace MarkdownHelper.Windows
             using (var bitmap = IconFactory.Draw(size, IconFactory.DefaultBackground, Color.White, dot))
             {
                 IntPtr next = bitmap.GetHicon();
-                using (var created = Icon.FromHandle(next)) icon.Icon = created;
+                var previous = currentIcon;
+                currentIcon = Icon.FromHandle(next);
+                icon.Icon = currentIcon;
+                previous?.Dispose();
                 if (iconHandle != IntPtr.Zero) NativeMethods.DestroyIcon(iconHandle);
                 iconHandle = next;
             }

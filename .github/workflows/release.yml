@@ -1,0 +1,47 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    env:
+      MDH_CLIPBOARD_TESTS: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Read the version from the tag
+        id: version
+        shell: bash
+        run: echo "number=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        run: dotnet build MarkdownHelper.sln -c Release -p:Version=${{ steps.version.outputs.number }}
+
+      - name: Test
+        run: dotnet test MarkdownHelper.sln -c Release --no-build
+
+      - name: Collect the release files
+        shell: bash
+        run: |
+          mkdir release
+          cp src/MarkdownHelper/bin/Release/net48/MarkdownHelper.exe release/
+          cd release
+          sha256sum MarkdownHelper.exe > MarkdownHelper.exe.sha256
+
+      - name: Publish
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" release/MarkdownHelper.exe release/MarkdownHelper.exe.sha256 \
+            --title "Markdown Helper $GITHUB_REF_NAME" --generate-notes

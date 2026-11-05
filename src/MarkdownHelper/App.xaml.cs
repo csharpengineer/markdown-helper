@@ -13,6 +13,10 @@ namespace MarkdownHelper
     {
         private const string MutexName = @"Local\MarkdownHelper.SingleInstance";
         private const string ShowEventName = @"Local\MarkdownHelper.ShowPreview";
+        private const string QuitEventName = @"Local\MarkdownHelper.Quit";
+
+        /// <summary>Tells a running copy to exit, for upgrades and scripts.</summary>
+        private const string QuitArgument = "--quit";
 
         /// <summary>Leaves the "start with Windows" entry alone, for development runs.</summary>
         private const string NoStartupArgument = "--no-startup";
@@ -26,6 +30,8 @@ namespace MarkdownHelper
         private Mutex instanceMutex;
         private EventWaitHandle showEvent;
         private RegisteredWaitHandle showWait;
+        private EventWaitHandle quitEvent;
+        private RegisteredWaitHandle quitWait;
         private AppController controller;
 
         protected override void OnStartup(StartupEventArgs e)
@@ -35,10 +41,18 @@ namespace MarkdownHelper
 
             instanceMutex = new Mutex(true, MutexName, out bool firstInstance);
             showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ShowEventName);
+            quitEvent = new EventWaitHandle(false, EventResetMode.AutoReset, QuitEventName);
 
             if (!firstInstance)
             {
-                showEvent.Set();
+                if (e.Args.Contains(QuitArgument)) quitEvent.Set();
+                else showEvent.Set();
+                Shutdown();
+                return;
+            }
+
+            if (e.Args.Contains(QuitArgument))
+            {
                 Shutdown();
                 return;
             }
@@ -54,6 +68,11 @@ namespace MarkdownHelper
             {
                 Dispatcher.BeginInvoke(new Action(() => controller?.OpenPreviewFromClipboard()));
             }, null, Timeout.Infinite, executeOnlyOnce: false);
+
+            quitWait = ThreadPool.RegisterWaitForSingleObject(quitEvent, (state, timedOut) =>
+            {
+                Dispatcher.BeginInvoke(new Action(Shutdown));
+            }, null, Timeout.Infinite, executeOnlyOnce: true);
 
             // A markdown file passed on the command line opens directly.
             string file = e.Args.FirstOrDefault(a => !a.StartsWith("--", StringComparison.Ordinal));
@@ -91,8 +110,10 @@ namespace MarkdownHelper
         protected override void OnExit(ExitEventArgs e)
         {
             showWait?.Unregister(null);
+            quitWait?.Unregister(null);
             controller?.Dispose();
             showEvent?.Dispose();
+            quitEvent?.Dispose();
             instanceMutex?.Dispose();
             base.OnExit(e);
         }
