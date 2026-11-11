@@ -65,22 +65,25 @@ namespace MarkdownHelper.Windows
         }
 
         /// <summary>True when the copying app asked monitors like this one to look away.</summary>
-        public static bool IsMarkedPrivate(IntPtr owner)
-        {
-            if (NativeMethods.IsClipboardFormatAvailable(ExcludeFormat)) return true;
-            if (NativeMethods.IsClipboardFormatAvailable(ViewerIgnoreFormat)) return true;
-            if (!NativeMethods.IsClipboardFormatAvailable(HistoryFormat)) return false;
+        public static bool IsMarkedPrivate(IntPtr owner) => PrivacyMarker(owner) != null;
 
-            if (!Open(owner)) return true;
+        /// <summary>Which privacy marker the clipboard carries, or null when there is none.</summary>
+        public static string PrivacyMarker(IntPtr owner)
+        {
+            if (NativeMethods.IsClipboardFormatAvailable(ExcludeFormat)) return "ExcludeClipboardContentFromMonitorProcessing";
+            if (NativeMethods.IsClipboardFormatAvailable(ViewerIgnoreFormat)) return "Clipboard Viewer Ignore";
+            if (!NativeMethods.IsClipboardFormatAvailable(HistoryFormat)) return null;
+
+            if (!Open(owner)) return "CanIncludeInClipboardHistory (clipboard stayed locked)";
             try
             {
                 IntPtr handle = NativeMethods.GetClipboardData(HistoryFormat);
-                if (handle == IntPtr.Zero) return false;
+                if (handle == IntPtr.Zero) return null;
                 IntPtr pointer = NativeMethods.GlobalLock(handle);
-                if (pointer == IntPtr.Zero) return false;
+                if (pointer == IntPtr.Zero) return null;
                 try
                 {
-                    return Marshal.ReadInt32(pointer) == 0;
+                    return Marshal.ReadInt32(pointer) == 0 ? "CanIncludeInClipboardHistory=0" : null;
                 }
                 finally
                 {

@@ -57,6 +57,8 @@ namespace MarkdownHelper
                 return;
             }
 
+            if (e.Args.Contains(DiagnosticLog.Argument)) DiagnosticLog.Start();
+
             string folder = Environment.GetEnvironmentVariable(SettingsDirVariable);
             string path = string.IsNullOrEmpty(folder) ? SettingsStore.DefaultPath() : Path.Combine(folder, "settings.json");
             bool manageStartup = !e.Args.Contains(NoStartupArgument);

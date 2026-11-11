@@ -87,6 +87,7 @@ namespace MarkdownHelper.Windows
             switch (message)
             {
                 case NativeMethods.WM_CLIPBOARDUPDATE:
+                    DiagnosticLog.Write("Clipboard changed (#" + NativeMethods.GetClipboardSequenceNumber() + ")");
                     settle.Stop();
                     settle.Start();
                     handled = true;
@@ -104,18 +105,33 @@ namespace MarkdownHelper.Windows
         {
             bool ownWrite = ClipboardAccess.IsOwnContent;
             string process = ClipboardAccess.OwnerProcessName(out bool ownProcess);
+            string privacy = ClipboardAccess.PrivacyMarker(Handle);
+            uint sequence = NativeMethods.GetClipboardSequenceNumber();
+            if (DiagnosticLog.Enabled)
+            {
+                DiagnosticLog.Write("Copy #" + sequence + " from " + (process ?? "unknown app") + (ownProcess || ownWrite ? " (this tool)" : "") +
+                    ". Formats: " + DiagnosticLog.FormatNames(Handle) + ". Privacy marker: " + (privacy ?? "none"));
+            }
             var copy = new CopyInfo
             {
                 IsOwnWrite = ownWrite || ownProcess,
-                IsPrivate = ClipboardAccess.IsMarkedPrivate(Handle),
+                IsPrivate = privacy != null,
                 ProcessName = process
             };
 
             // Text is only read once the copy has passed every check that does not need it.
-            if (copy.IsOwnWrite || copy.IsPrivate) return;
+            if (copy.IsOwnWrite || copy.IsPrivate)
+            {
+                DiagnosticLog.Write("  Skipped: " + (copy.IsOwnWrite ? CopyDecision.OwnWrite : CopyDecision.Private));
+                return;
+            }
+
+            var timer = System.Diagnostics.Stopwatch.StartNew();
             copy.Text = ClipboardAccess.ReadText(Handle);
 
-            if (filter.ShouldOffer(copy, IgnoredApps)) MarkdownCopied?.Invoke(this, copy.Text);
+            var decision = filter.Decide(copy, IgnoredApps);
+            DiagnosticLog.Write("  Text: " + (copy.Text == null ? "none" : copy.Text.Length + " characters") + ", read in " + timer.ElapsedMilliseconds + " ms. Result: " + decision);
+            if (decision == CopyDecision.Offer) MarkdownCopied?.Invoke(this, copy.Text);
         }
 
         public void Dispose()
