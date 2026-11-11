@@ -2,6 +2,18 @@ using System.Collections.Generic;
 
 namespace MarkdownHelper.Core
 {
+    /// <summary>Why a copy was or was not offered. Used for the diagnostic log.</summary>
+    public enum CopyDecision
+    {
+        Offer,
+        OwnWrite,
+        Private,
+        NoText,
+        IgnoredApp,
+        NotMarkdown,
+        Repeat
+    }
+
     /// <summary>What the clipboard watcher learned about a single copy.</summary>
     public sealed class CopyInfo
     {
@@ -19,17 +31,20 @@ namespace MarkdownHelper.Core
     {
         private int? lastHash;
 
-        public bool ShouldOffer(CopyInfo copy, IEnumerable<IgnoredApp> ignoredApps)
+        public bool ShouldOffer(CopyInfo copy, IEnumerable<IgnoredApp> ignoredApps) => Decide(copy, ignoredApps) == CopyDecision.Offer;
+
+        public CopyDecision Decide(CopyInfo copy, IEnumerable<IgnoredApp> ignoredApps)
         {
-            if (copy.IsOwnWrite || copy.IsPrivate) return false;
-            if (string.IsNullOrEmpty(copy.Text)) return false;
-            if (IgnoreList.Matches(ignoredApps, copy.ProcessName)) return false;
-            if (!MarkdownDetector.IsMarkdown(copy.Text)) return false;
+            if (copy.IsOwnWrite) return CopyDecision.OwnWrite;
+            if (copy.IsPrivate) return CopyDecision.Private;
+            if (string.IsNullOrEmpty(copy.Text)) return CopyDecision.NoText;
+            if (IgnoreList.Matches(ignoredApps, copy.ProcessName)) return CopyDecision.IgnoredApp;
+            if (!MarkdownDetector.IsMarkdown(copy.Text)) return CopyDecision.NotMarkdown;
 
             int hash = StableHash(copy.Text);
-            if (hash == lastHash) return false;
+            if (hash == lastHash) return CopyDecision.Repeat;
             lastHash = hash;
-            return true;
+            return CopyDecision.Offer;
         }
 
         private static int StableHash(string text)

@@ -178,3 +178,26 @@ namespace MarkdownHelper.Tests
         }
     }
 }
+
+namespace MarkdownHelper.Tests
+{
+    public class CopyDecisionTests
+    {
+        private const string Markdown = "# Title\n\nSome **bold** words here.";
+
+        [Fact]
+        public void EachRejectionNamesItsReason()
+        {
+            var ignored = new[] { new IgnoredApp("Notes", "notes") };
+            Assert.Equal(CopyDecision.OwnWrite, new CopyFilter().Decide(new CopyInfo { IsOwnWrite = true, Text = Markdown }, ignored));
+            Assert.Equal(CopyDecision.Private, new CopyFilter().Decide(new CopyInfo { IsPrivate = true, Text = Markdown }, ignored));
+            Assert.Equal(CopyDecision.NoText, new CopyFilter().Decide(new CopyInfo { Text = null }, ignored));
+            Assert.Equal(CopyDecision.IgnoredApp, new CopyFilter().Decide(new CopyInfo { ProcessName = "notes", Text = Markdown }, ignored));
+            Assert.Equal(CopyDecision.NotMarkdown, new CopyFilter().Decide(new CopyInfo { Text = "just some words copied" }, ignored));
+
+            var filter = new CopyFilter();
+            Assert.Equal(CopyDecision.Offer, filter.Decide(new CopyInfo { Text = Markdown }, ignored));
+            Assert.Equal(CopyDecision.Repeat, filter.Decide(new CopyInfo { Text = Markdown }, ignored));
+        }
+    }
+}

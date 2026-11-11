@@ -19,7 +19,6 @@ namespace MarkdownHelper.Windows
         private static readonly uint HtmlFormat = NativeMethods.RegisterClipboardFormat("HTML Format");
         private static readonly uint ExcludeFormat = NativeMethods.RegisterClipboardFormat("ExcludeClipboardContentFromMonitorProcessing");
         private static readonly uint ViewerIgnoreFormat = NativeMethods.RegisterClipboardFormat("Clipboard Viewer Ignore");
-        private static readonly uint HistoryFormat = NativeMethods.RegisterClipboardFormat("CanIncludeInClipboardHistory");
 
         /// <summary>The sequence number of this tool's last write, so the watcher can skip it.</summary>
         public static uint LastWriteSequence { get; private set; }
@@ -65,32 +64,18 @@ namespace MarkdownHelper.Windows
         }
 
         /// <summary>True when the copying app asked monitors like this one to look away.</summary>
-        public static bool IsMarkedPrivate(IntPtr owner)
-        {
-            if (NativeMethods.IsClipboardFormatAvailable(ExcludeFormat)) return true;
-            if (NativeMethods.IsClipboardFormatAvailable(ViewerIgnoreFormat)) return true;
-            if (!NativeMethods.IsClipboardFormatAvailable(HistoryFormat)) return false;
+        public static bool IsMarkedPrivate(IntPtr owner) => PrivacyMarker(owner) != null;
 
-            if (!Open(owner)) return true;
-            try
-            {
-                IntPtr handle = NativeMethods.GetClipboardData(HistoryFormat);
-                if (handle == IntPtr.Zero) return false;
-                IntPtr pointer = NativeMethods.GlobalLock(handle);
-                if (pointer == IntPtr.Zero) return false;
-                try
-                {
-                    return Marshal.ReadInt32(pointer) == 0;
-                }
-                finally
-                {
-                    NativeMethods.GlobalUnlock(handle);
-                }
-            }
-            finally
-            {
-                NativeMethods.CloseClipboard();
-            }
+        /// <summary>
+        /// Which privacy marker the clipboard carries, or null when there is none. Only markers
+        /// meant for clipboard monitors count. "CanIncludeInClipboardHistory" only keeps a copy
+        /// out of Windows clipboard history, and Remote Desktop sets it on every remote copy.
+        /// </summary>
+        public static string PrivacyMarker(IntPtr owner)
+        {
+            if (NativeMethods.IsClipboardFormatAvailable(ExcludeFormat)) return "ExcludeClipboardContentFromMonitorProcessing";
+            if (NativeMethods.IsClipboardFormatAvailable(ViewerIgnoreFormat)) return "Clipboard Viewer Ignore";
+            return null;
         }
 
         /// <summary>The name of the process that made the current copy, or null if unknown.</summary>

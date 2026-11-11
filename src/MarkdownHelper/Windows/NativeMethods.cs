@@ -40,6 +40,12 @@ namespace MarkdownHelper.Windows
         public static extern uint GetClipboardSequenceNumber();
 
         [DllImport("user32.dll", SetLastError = true)]
+        public static extern uint EnumClipboardFormats(uint format);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern int GetClipboardFormatName(uint format, System.Text.StringBuilder name, int maxCount);
+
+        [DllImport("user32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool OpenClipboard(IntPtr hwnd);
 
