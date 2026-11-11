@@ -130,7 +130,7 @@ namespace MarkdownHelper.Windows
             copy.Text = ClipboardAccess.ReadText(Handle);
 
             var decision = filter.Decide(copy, IgnoredApps);
-            DiagnosticLog.Write("  Text: " + (copy.Text == null ? "none" : copy.Text.Length + " characters") + ", read in " + timer.ElapsedMilliseconds + " ms. Result: " + decision);
+            DiagnosticLog.Write("  Text: " + (copy.Text == null ? "none" : copy.Text.Length + " characters, " + MarkdownDetector.Explain(copy.Text)) + ", read in " + timer.ElapsedMilliseconds + " ms. Result: " + decision);
             if (decision == CopyDecision.Offer) MarkdownCopied?.Invoke(this, copy.Text);
         }
 

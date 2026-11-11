@@ -32,19 +32,32 @@ namespace MarkdownHelper.Core
 
         public static bool IsMarkdown(string text)
         {
+            return Explain(text).StartsWith(Markdown, StringComparison.Ordinal);
+        }
+
+        private const string Markdown = "markdown";
+
+        /// <summary>
+        /// Says why text does or does not count as markdown, naming the signs found, for the
+        /// diagnostic log. It describes the text's shape only and never quotes it.
+        /// </summary>
+        public static string Explain(string text)
+        {
             try
             {
                 return Inspect(text);
             }
             catch (RegexMatchTimeoutException)
             {
-                return false;
+                return "took too long to check";
             }
         }
 
-        private static bool Inspect(string text)
+        private static string Inspect(string text)
         {
-            if (string.IsNullOrWhiteSpace(text) || text.Length < MinimumLength || text.Length > MaximumLength) return false;
+            if (string.IsNullOrWhiteSpace(text)) return "empty";
+            if (text.Length < MinimumLength) return "too short";
+            if (text.Length > MaximumLength) return "too long";
 
             var lines = MarkdownParser.SplitLines(text);
             var prose = new System.Collections.Generic.List<string>();
@@ -60,19 +73,29 @@ namespace MarkdownHelper.Core
                 if (!inFence) prose.Add(line);
             }
 
-            if (LooksLikeSourceCode(prose)) return false;
+            if (LooksLikeSourceCode(prose)) return "looks like source code";
 
-            int signs = sawFence ? SignsNeeded : 0;
-            if (HasTable(prose)) signs += SignsNeeded;
-            if (prose.Any(l => HeadingLine.IsMatch(l))) signs++;
-            if (prose.Any(l => Bold.IsMatch(l))) signs++;
-            if (HasRun(prose, Bullet)) signs++;
-            if (HasRun(prose, Numbered)) signs++;
-            if (prose.Any(l => QuoteLine.IsMatch(l))) signs++;
-            if (prose.Any(l => LinkInline.IsMatch(l))) signs++;
-            if (prose.Any(l => InlineCode.IsMatch(l))) signs++;
+            var found = new System.Collections.Generic.List<string>();
+            int signs = 0;
+            void Count(bool present, string name, int weight = 1)
+            {
+                if (!present) return;
+                found.Add(name);
+                signs += weight;
+            }
 
-            return signs >= SignsNeeded;
+            Count(sawFence, "code block", SignsNeeded);
+            Count(HasTable(prose), "table", SignsNeeded);
+            Count(prose.Any(l => HeadingLine.IsMatch(l)), "heading");
+            Count(prose.Any(l => Bold.IsMatch(l)), "bold");
+            Count(HasRun(prose, Bullet), "bullet list");
+            Count(HasRun(prose, Numbered), "numbered list");
+            Count(prose.Any(l => QuoteLine.IsMatch(l)), "quote");
+            Count(prose.Any(l => LinkInline.IsMatch(l)), "link");
+            Count(prose.Any(l => InlineCode.IsMatch(l)), "inline code");
+
+            string list = found.Count == 0 ? "no signs" : "signs: " + string.Join(", ", found);
+            return (signs >= SignsNeeded ? Markdown + ", " : "not enough signs, ") + list;
         }
 
         private static bool HasTable(System.Collections.Generic.List<string> lines)

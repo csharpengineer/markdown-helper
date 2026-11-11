@@ -68,6 +68,60 @@ namespace MarkdownHelper.Tests
             });
         }
 
+
+        private static void CopyFromAnotherApp(string text, params string[] markers)
+        {
+            var thread = new Thread(() =>
+            {
+                var data = new System.Windows.Forms.DataObject();
+                data.SetData(System.Windows.Forms.DataFormats.UnicodeText, text);
+                foreach (string marker in markers) data.SetData(marker, new System.IO.MemoryStream(BitConverter.GetBytes(0)));
+                System.Windows.Forms.Clipboard.SetDataObject(data, true);
+            });
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+            thread.Join();
+        }
+
+        [ClipboardFact]
+        public void RemoteDesktopCopiesAreOffered()
+        {
+            OnDispatcher(_ =>
+            {
+                using (var watcher = new MessageWindow())
+                {
+                    string seen = null;
+                    watcher.MarkdownCopied += (s, text) => seen = text;
+                    watcher.SetWatching(true);
+
+                    // These are the markers the Remote Desktop client puts on every remote copy.
+                    string copied = "# Remote " + Guid.NewGuid().ToString("N") + "\n\nSome **bold** words.";
+                    CopyFromAnotherApp(copied, "CanIncludeInClipboardHistory", "CanUploadToCloudClipboard");
+
+                    Pump(TimeSpan.FromMilliseconds(800));
+                    Assert.Equal(copied, seen);
+                }
+            });
+        }
+
+        [ClipboardFact]
+        public void CopiesMarkedForMonitorsToIgnoreAreNotRead()
+        {
+            OnDispatcher(_ =>
+            {
+                using (var watcher = new MessageWindow())
+                {
+                    int count = 0;
+                    watcher.MarkdownCopied += (s, text) => count++;
+                    watcher.SetWatching(true);
+
+                    CopyFromAnotherApp("# Secret " + Guid.NewGuid().ToString("N") + "\n\nSome **bold** words.", "ExcludeClipboardContentFromMonitorProcessing");
+
+                    Pump(TimeSpan.FromMilliseconds(800));
+                    Assert.Equal(0, count);
+                }
+            });
+        }
         [ClipboardFact]
         public void CopiedMarkdownIsNoticedAndOwnWritesAreNot()
         {

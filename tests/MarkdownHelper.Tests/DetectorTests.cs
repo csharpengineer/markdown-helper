@@ -53,3 +53,26 @@ namespace MarkdownHelper.Tests
     }
 
 }
+
+namespace MarkdownHelper.Tests
+{
+    public class DetectorExplanationTests
+    {
+        [Theory]
+        [InlineData("# Summary\n\nThis is **important** text.", "markdown, signs: heading, bold")]
+        [InlineData("Only **one** sign of markdown in this sentence.", "not enough signs, signs: bold")]
+        [InlineData("Just an ordinary sentence that someone copied.", "not enough signs, no signs")]
+        [InlineData("hello", "too short")]
+        [InlineData("", "empty")]
+        [InlineData("| A | B |\n| --- | --- |\n| 1 | 2 |", "markdown, signs: table")]
+        public void ExplainsWhatItFound(string text, string expected) => Assert.Equal(expected, MarkdownDetector.Explain(text));
+
+        [Fact]
+        public void ExplanationNeverQuotesTheText()
+        {
+            string explanation = MarkdownDetector.Explain("# Secret plan\n\nThe **password** is hunter2.");
+            Assert.DoesNotContain("hunter2", explanation);
+            Assert.DoesNotContain("Secret", explanation);
+        }
+    }
+}

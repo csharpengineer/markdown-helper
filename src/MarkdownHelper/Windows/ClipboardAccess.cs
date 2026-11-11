@@ -19,7 +19,6 @@ namespace MarkdownHelper.Windows
         private static readonly uint HtmlFormat = NativeMethods.RegisterClipboardFormat("HTML Format");
         private static readonly uint ExcludeFormat = NativeMethods.RegisterClipboardFormat("ExcludeClipboardContentFromMonitorProcessing");
         private static readonly uint ViewerIgnoreFormat = NativeMethods.RegisterClipboardFormat("Clipboard Viewer Ignore");
-        private static readonly uint HistoryFormat = NativeMethods.RegisterClipboardFormat("CanIncludeInClipboardHistory");
 
         /// <summary>The sequence number of this tool's last write, so the watcher can skip it.</summary>
         public static uint LastWriteSequence { get; private set; }
@@ -67,33 +66,16 @@ namespace MarkdownHelper.Windows
         /// <summary>True when the copying app asked monitors like this one to look away.</summary>
         public static bool IsMarkedPrivate(IntPtr owner) => PrivacyMarker(owner) != null;
 
-        /// <summary>Which privacy marker the clipboard carries, or null when there is none.</summary>
+        /// <summary>
+        /// Which privacy marker the clipboard carries, or null when there is none. Only markers
+        /// meant for clipboard monitors count. "CanIncludeInClipboardHistory" only keeps a copy
+        /// out of Windows clipboard history, and Remote Desktop sets it on every remote copy.
+        /// </summary>
         public static string PrivacyMarker(IntPtr owner)
         {
             if (NativeMethods.IsClipboardFormatAvailable(ExcludeFormat)) return "ExcludeClipboardContentFromMonitorProcessing";
             if (NativeMethods.IsClipboardFormatAvailable(ViewerIgnoreFormat)) return "Clipboard Viewer Ignore";
-            if (!NativeMethods.IsClipboardFormatAvailable(HistoryFormat)) return null;
-
-            if (!Open(owner)) return "CanIncludeInClipboardHistory (clipboard stayed locked)";
-            try
-            {
-                IntPtr handle = NativeMethods.GetClipboardData(HistoryFormat);
-                if (handle == IntPtr.Zero) return null;
-                IntPtr pointer = NativeMethods.GlobalLock(handle);
-                if (pointer == IntPtr.Zero) return null;
-                try
-                {
-                    return Marshal.ReadInt32(pointer) == 0 ? "CanIncludeInClipboardHistory=0" : null;
-                }
-                finally
-                {
-                    NativeMethods.GlobalUnlock(handle);
-                }
-            }
-            finally
-            {
-                NativeMethods.CloseClipboard();
-            }
+            return null;
         }
 
         /// <summary>The name of the process that made the current copy, or null if unknown.</summary>
